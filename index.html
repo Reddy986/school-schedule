@@ -108,8 +108,12 @@
         const scheduleType = document.getElementById('schedule-type');
         const notesDisplay = document.getElementById('notes');
 
-        // Set default date to today
-        const today = new Date().toISOString().split('T')[0];
+        // Set default date to today (using local timezone, not UTC)
+        const todayDate = new Date();
+        const year = todayDate.getFullYear();
+        const month = String(todayDate.getMonth() + 1).padStart(2, '0');
+        const day = String(todayDate.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
         dateInput.value = today;
 
         function checkSchedule(dateString) {
