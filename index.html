@@ -30,6 +30,52 @@
                 </div>
             </div>
 
+            <div class="carpool-section">
+                <h3>🚗 Carpool Schedule</h3>
+                <div class="carpool-today" id="carpool-today">
+                    <div class="carpool-loading">Loading carpool info...</div>
+                </div>
+                <div class="carpool-week">
+                    <h4>Full Week Schedule</h4>
+                    <table class="carpool-table">
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Drop-off (8:10 AM)</th>
+                                <th>Pickup</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Monday</strong></td>
+                                <td>Dipanshu/Shweta</td>
+                                <td>Niraj (2:28 PM)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Tuesday</strong></td>
+                                <td>Niraj</td>
+                                <td>Dipanshu/Shweta (2:28 PM)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Wednesday</strong></td>
+                                <td>Ajit/Kalapana</td>
+                                <td>Siva/Subathra (1:16 PM)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Thursday</strong></td>
+                                <td>Siva/Subathra</td>
+                                <td>Abhishek/Shivani (2:28 PM)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Friday</strong></td>
+                                <td>Abhishek/Shivani</td>
+                                <td>Ajit/Kalapana (2:28 PM)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="info-section">
                 <h3>📅 Schedule Types</h3>
                 <ul>
@@ -269,6 +315,72 @@
 
         // Fetch weather on page load
         fetchWeather();
+
+        // Carpool functionality
+        function displayTodaysCarpool() {
+            const carpoolSchedule = {
+                1: { // Monday
+                    dropoff: 'Dipanshu/Shweta',
+                    pickup: 'Niraj',
+                    pickupTime: '2:28 PM'
+                },
+                2: { // Tuesday
+                    dropoff: 'Niraj',
+                    pickup: 'Dipanshu/Shweta',
+                    pickupTime: '2:28 PM'
+                },
+                3: { // Wednesday
+                    dropoff: 'Ajit/Kalapana',
+                    pickup: 'Siva/Subathra',
+                    pickupTime: '1:16 PM'
+                },
+                4: { // Thursday
+                    dropoff: 'Siva/Subathra',
+                    pickup: 'Abhishek/Shivani',
+                    pickupTime: '2:28 PM'
+                },
+                5: { // Friday
+                    dropoff: 'Abhishek/Shivani',
+                    pickup: 'Ajit/Kalapana',
+                    pickupTime: '2:28 PM'
+                }
+            };
+
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+            const carpoolContainer = document.getElementById('carpool-today');
+
+            // Check if it's a weekend
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                carpoolContainer.innerHTML = `
+                    <div class="carpool-weekend">
+                        <div class="carpool-icon">🏡</div>
+                        <div class="carpool-message">No carpool today - it's the weekend!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Get today's carpool info
+            const todayCarpool = carpoolSchedule[dayOfWeek];
+
+            carpoolContainer.innerHTML = `
+                <div class="carpool-today-display">
+                    <div class="carpool-card dropoff-card">
+                        <div class="carpool-label">🚙 Drop-off (8:10 AM)</div>
+                        <div class="carpool-person">${todayCarpool.dropoff}</div>
+                    </div>
+                    <div class="carpool-card pickup-card">
+                        <div class="carpool-label">🏫 Pickup (${todayCarpool.pickupTime})</div>
+                        <div class="carpool-person">${todayCarpool.pickup}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Display today's carpool on page load
+        displayTodaysCarpool();
     </script>
 </body>
 </html>
