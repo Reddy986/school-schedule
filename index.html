@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6th Grade - When Does School End?</title>
+    <link rel="stylesheet" href="schedule-styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🏫 When Does School End?</h1>
+            <p class="subtitle">6th Grade Bell Schedule</p>
+
+            <div class="date-picker-section">
+                <label for="date-input">Pick a Date:</label>
+                <input type="date" id="date-input" min="2025-08-01" max="2026-06-30">
+            </div>
+
+            <div class="result" id="result">
+                <div class="time-display" id="time-display">Select a date to see when school ends</div>
+                <div class="schedule-type" id="schedule-type"></div>
+                <div class="notes" id="notes"></div>
+            </div>
+
+            <div class="info-section">
+                <h3>📅 Schedule Types</h3>
+                <ul>
+                    <li><strong>Regular Day (A1):</strong> M/Tu/Th/Fri - Ends at 2:28 PM</li>
+                    <li><strong>Minimum Day (A2):</strong> Every Wednesday + special dates - Ends at 1:17 PM</li>
+                    <li><strong>Block Schedule (A3):</strong> M/Th in April - Ends at 2:28 PM</li>
+                    <li><strong>Last Day (A4):</strong> June 2, 2026 - Ends at 1:01 PM</li>
+                </ul>
+            </div>
+
+            <div class="news-section">
+                <h3>📰 Latest News from Fremont</h3>
+                <div class="news-grid">
+                    <div class="news-item">
+                        <span class="news-category local">Local</span>
+                        <h4>Rancher vs. City: Park Access Dispute</h4>
+                        <p>A Fremont rancher is fighting to keep a gate on Morrison Canyon Road that city officials say blocks public park access.</p>
+                        <span class="news-date">January 10, 2026</span>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-category local">Local</span>
+                        <h4>$110M Tech Campus Sold in Fremont</h4>
+                        <p>Wall Street firm Morgan Stanley purchased a major tech campus on Osgood Road, showing continued business growth in Fremont.</p>
+                        <span class="news-date">January 9, 2026</span>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-category school">School</span>
+                        <h4>2026-2027 School Year Enrollment Now Open</h4>
+                        <p>FUSD has opened enrollment applications for all grades for the upcoming 2026-2027 school year. First day is August 11, 2026.</p>
+                        <span class="news-date">January 2026</span>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-category school">School</span>
+                        <h4>120 FUSD Students Named National Merit Semifinalists</h4>
+                        <p>Fremont Unified students earned recognition as 2026 National Merit Scholarship Semifinalists, competing for scholarships this spring.</p>
+                        <span class="news-date">September 2025</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Special dates and their end times
+        const specialDates = {
+            // Minimum Days (A2 Schedule) - End at 1:17 PM
+            '2025-08-12': { endTime: '1:17 PM', type: 'Minimum Day', note: 'First day of school - early dismissal' },
+            '2025-11-20': { endTime: '1:17 PM', type: 'Minimum Day', note: 'Before Thanksgiving break' },
+            '2025-12-19': { endTime: '1:17 PM', type: 'Minimum Day', note: 'Before winter break' },
+            '2026-05-24': { endTime: '1:17 PM', type: 'Minimum Day', note: 'Before Memorial Day weekend' },
+            '2026-06-01': { endTime: '1:17 PM', type: 'Minimum Day', note: 'Last week of school' },
+
+            // Last Day of School (A4 Schedule)
+            '2026-06-02': { endTime: '1:01 PM', type: 'Last Day of School', note: '🎉 Have a great summer!' },
+
+            // Block Schedule Days (A3 Schedule M/TH) - End at 2:28 PM
+            '2026-04-13': { endTime: '2:28 PM', type: 'Block Schedule Day', note: 'Periods 5/6 combined (105 min)' },
+            '2026-04-14': { endTime: '2:28 PM', type: 'Block Schedule Day', note: 'Periods 5/6 combined (105 min)' },
+            '2026-04-16': { endTime: '2:28 PM', type: 'Block Schedule Day', note: 'Periods 5/6 combined (105 min)' },
+            '2026-04-17': { endTime: '2:28 PM', type: 'Block Schedule Day', note: 'Periods 5/6 combined (105 min)' },
+            '2026-04-20': { endTime: '2:28 PM', type: 'Block Schedule Day', note: 'Periods 5/6 combined (105 min)' },
+            '2026-04-21': { endTime: '2:28 PM', type: 'Block Schedule Day', note: 'Periods 5/6 combined (105 min)' },
+            '2026-04-23': { endTime: '2:28 PM', type: 'Block Schedule Day', note: 'Periods 5/6 combined (105 min)' },
+            '2026-04-24': { endTime: '2:28 PM', type: 'Block Schedule Day', note: 'Periods 5/6 combined (105 min)' },
+            '2026-04-27': { endTime: '2:28 PM', type: 'Block Schedule Day', note: 'Periods 5/6 combined (105 min)' },
+            '2026-04-28': { endTime: '2:28 PM', type: 'Block Schedule Day', note: 'Periods 5/6 combined (105 min)' }
+        };
+
+        const dateInput = document.getElementById('date-input');
+        const timeDisplay = document.getElementById('time-display');
+        const scheduleType = document.getElementById('schedule-type');
+        const notesDisplay = document.getElementById('notes');
+
+        // Set default date to today
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+
+        function checkSchedule(dateString) {
+            const date = new Date(dateString + 'T12:00:00');
+            const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+            // Check if it's a weekend
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                timeDisplay.textContent = 'No School!';
+                timeDisplay.className = 'time-display no-school';
+                scheduleType.textContent = 'Weekend';
+                notesDisplay.textContent = '🎮 Enjoy your weekend!';
+                return;
+            }
+
+            // Check if it's a special date
+            if (specialDates[dateString]) {
+                const schedule = specialDates[dateString];
+                timeDisplay.textContent = schedule.endTime;
+                timeDisplay.className = 'time-display special';
+                scheduleType.textContent = schedule.type;
+                notesDisplay.textContent = schedule.note;
+            } else if (dayOfWeek === 3) {
+                // Wednesday - Minimum Day
+                timeDisplay.textContent = '1:17 PM';
+                timeDisplay.className = 'time-display special';
+                scheduleType.textContent = 'Minimum Day (Wednesday)';
+                notesDisplay.textContent = 'Period 6 ends at 1:17 PM';
+            } else {
+                // Regular day (M/Tu/Th/Fri)
+                timeDisplay.textContent = '2:28 PM';
+                timeDisplay.className = 'time-display regular';
+                scheduleType.textContent = 'Regular Day';
+                notesDisplay.textContent = 'Period 6 ends at 2:28 PM';
+            }
+        }
+
+        // Event listener for date changes
+        dateInput.addEventListener('change', (e) => {
+            checkSchedule(e.target.value);
+        });
+
+        // Check schedule for today on load
+        checkSchedule(today);
+    </script>
+</body>
+</html>
