@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fremont Government Spending - FY 2025-26</title>
+    <link rel="stylesheet" href="budget-styles.css">
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <!-- Navigation Link -->
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">← Back to School Schedule</a>
+            </div>
+
+            <!-- Header -->
+            <div class="header">
+                <h1>Fremont Government Spending</h1>
+                <p class="subtitle">Explore where your tax dollars go</p>
+                <p class="fiscal-year">Fiscal Year 2025-26 • Adopted June 10, 2025</p>
+            </div>
+
+            <!-- Total Budget Display -->
+            <div class="total-budget">
+                <div class="budget-label">Total Operating Budget</div>
+                <div class="budget-amount" id="total-amount">$392.4M</div>
+                <div class="budget-note">Click on any segment to explore details</div>
+            </div>
+
+            <!-- Breadcrumb Navigation -->
+            <div class="breadcrumb" id="breadcrumb">
+                <a class="breadcrumb-item active" onclick="showDepartmentView()">All Departments</a>
+            </div>
+
+            <!-- Current View Info -->
+            <div class="current-view" id="current-view">
+                <h2 class="view-title" id="view-title">Department Overview</h2>
+                <div class="view-amount" id="view-amount">$392.4M Total Budget</div>
+                <p class="view-description" id="view-description">
+                    The City of Fremont's operating budget funds essential services including public safety,
+                    infrastructure, parks, libraries, and community programs. Click on any department to see detailed breakdown.
+                </p>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <canvas id="budgetChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="data-table-container">
+                <h3 id="table-title">Budget by Department</h3>
+                <table class="data-table" id="data-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>% of Budget</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Reserve Funds Info -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Contingency Reserves</div>
+                    <div class="stat-value">$46.4M</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Budget Uncertainty Reserve</div>
+                    <div class="stat-value">$6.7M</div>
+                </div>
+            </div>
+
+            <!-- Data Sources -->
+            <div class="info-section">
+                <h3>📊 Data Sources</h3>
+                <ul id="sources-list">
+                    <!-- Populated by JavaScript -->
+                </ul>
+                <div class="disclaimer">
+                    <p class="disclaimer-text" id="disclaimer-text">
+                        <!-- Populated by JavaScript -->
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Data -->
+    <script src="budget-data.js"></script>
+
+    <!-- Main Application Script -->
+    <script>
+        // Global state
+        let currentChart = null;
+        let navigationState = {
+            level: 'department',
+            departmentName: null,
+            divisionName: null
+        };
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            showDepartmentView();
+            populateSources();
+            populateDisclaimer();
+        });
+
+        // Show department overview (Level 1)
+        function showDepartmentView() {
+            navigationState = {
+                level: 'department',
+                departmentName: null,
+                divisionName: null
+            };
+
+            updateBreadcrumb();
+            updateViewInfo(
+                'Department Overview',
+                formatCurrencyFull(BUDGET_DATA.totalBudget) + ' Total Budget',
+                "The City of Fremont's operating budget funds essential services including public safety, infrastructure, parks, libraries, and community programs. Click on any department to see detailed breakdown."
+            );
+
+            const labels = BUDGET_DATA.departments.map(d => d.name);
+            const data = BUDGET_DATA.departments.map(d => d.amount);
+            const colors = BUDGET_DATA.departments.map(d => d.color);
+            const ids = BUDGET_DATA.departments.map(d => d.id);
+
+            createChart(labels, data, colors, 'Click on a department to drill down', function(index) {
+                showDivisionView(BUDGET_DATA.departments[index].name);
+            });
+
+            populateTable(
+                'Budget by Department',
+                BUDGET_DATA.departments.map(d => ({
+                    name: d.name,
+                    amount: d.amount,
+                    color: d.color,
+                    onClick: () => showDivisionView(d.name)
+                })),
+                BUDGET_DATA.totalBudget
+            );
+        }
+
+        // Show division view for a department (Level 2)
+        function showDivisionView(departmentName) {
+            const department = getDepartmentByName(departmentName);
+            if (!department) return;
+
+            navigationState = {
+                level: 'division',
+                departmentName: departmentName,
+                divisionName: null
+            };
+
+            updateBreadcrumb();
+            updateViewInfo(
+                department.name,
+                formatCurrencyFull(department.amount) + ' (' + calculatePercentage(department.amount, BUDGET_DATA.totalBudget) + ' of total)',
+                department.description || 'Click on any division to see detailed expense breakdown.'
+            );
+
+            const labels = department.divisions.map(d => d.name);
+            const data = department.divisions.map(d => d.amount);
+            const colors = generateColors(department.divisions.length, department.color);
+
+            createChart(labels, data, colors, 'Click on a division to see line items', function(index) {
+                showLineItemView(departmentName, department.divisions[index].name);
+            });
+
+            populateTable(
+                'Budget by Division',
+                department.divisions.map(d => ({
+                    name: d.name,
+                    amount: d.amount,
+                    color: department.color,
+                    onClick: () => showLineItemView(departmentName, d.name)
+                })),
+                department.amount
+            );
+        }
+
+        // Show line item view for a division (Level 3)
+        function showLineItemView(departmentName, divisionName) {
+            const department = getDepartmentByName(departmentName);
+            if (!department) return;
+
+            const division = department.divisions.find(d => d.name === divisionName);
+            if (!division) return;
+
+            navigationState = {
+                level: 'lineItem',
+                departmentName: departmentName,
+                divisionName: divisionName
+            };
+
+            updateBreadcrumb();
+            updateViewInfo(
+                divisionName,
+                formatCurrencyFull(division.amount) + ' (' + calculatePercentage(division.amount, department.amount) + ' of ' + department.name + ')',
+                'Detailed expense breakdown for this division.'
+            );
+
+            const labels = division.lineItems.map(item => item.name);
+            const data = division.lineItems.map(item => item.amount);
+            const colors = generateColors(division.lineItems.length, department.color);
+
+            createChart(labels, data, colors, 'Line item details', null);
+
+            populateTable(
+                'Expense Line Items',
+                division.lineItems.map(item => ({
+                    name: item.name,
+                    amount: item.amount,
+                    color: department.color,
+                    onClick: null
+                })),
+                division.amount
+            );
+        }
+
+        // Create or update chart
+        function createChart(labels, data, colors, tooltipLabel, onClickHandler) {
+            const ctx = document.getElementById('budgetChart').getContext('2d');
+
+            // Destroy existing chart
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            currentChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                },
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    if (data.labels.length && data.datasets.length) {
+                                        return data.labels.map((label, i) => {
+                                            const value = data.datasets[0].data[i];
+                                            return {
+                                                text: label + ' - ' + formatCurrency(value),
+                                                fillStyle: data.datasets[0].backgroundColor[i],
+                                                hidden: false,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                    return [];
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return label + ': ' + formatCurrencyFull(value) + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    },
+                    onClick: function(event, elements) {
+                        if (elements.length > 0 && onClickHandler) {
+                            const index = elements[0].index;
+                            onClickHandler(index);
+                        }
+                    },
+                    cursor: onClickHandler ? 'pointer' : 'default'
+                }
+            });
+        }
+
+        // Update breadcrumb navigation
+        function updateBreadcrumb() {
+            const breadcrumb = document.getElementById('breadcrumb');
+            let html = '<a class="breadcrumb-item" onclick="showDepartmentView()">All Departments</a>';
+
+            if (navigationState.level === 'division' || navigationState.level === 'lineItem') {
+                html += '<span class="breadcrumb-separator">›</span>';
+                if (navigationState.level === 'division') {
+                    html += '<span class="breadcrumb-item active">' + navigationState.departmentName + '</span>';
+                } else {
+                    html += '<a class="breadcrumb-item" onclick="showDivisionView(\'' + navigationState.departmentName + '\')">' + navigationState.departmentName + '</a>';
+                }
+            }
+
+            if (navigationState.level === 'lineItem') {
+                html += '<span class="breadcrumb-separator">›</span>';
+                html += '<span class="breadcrumb-item active">' + navigationState.divisionName + '</span>';
+            }
+
+            breadcrumb.innerHTML = html;
+        }
+
+        // Update view information
+        function updateViewInfo(title, amount, description) {
+            document.getElementById('view-title').textContent = title;
+            document.getElementById('view-amount').textContent = amount;
+            document.getElementById('view-description').textContent = description;
+        }
+
+        // Populate data table
+        function populateTable(title, items, total) {
+            document.getElementById('table-title').textContent = title;
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            items.forEach(item => {
+                const row = tbody.insertRow();
+                row.style.cursor = item.onClick ? 'pointer' : 'default';
+
+                if (item.onClick) {
+                    row.onclick = item.onClick;
+                }
+
+                const cellName = row.insertCell(0);
+                cellName.innerHTML = '<span class="category-color-indicator" style="background-color: ' + item.color + '"></span>' +
+                                    '<span class="table-category-name">' + item.name + '</span>';
+
+                const cellAmount = row.insertCell(1);
+                cellAmount.innerHTML = '<span class="table-amount">' + formatCurrencyFull(item.amount) + '</span>';
+
+                const cellPercentage = row.insertCell(2);
+                cellPercentage.innerHTML = '<span class="table-percentage">' + calculatePercentage(item.amount, total) + '</span>';
+            });
+        }
+
+        // Generate color variations
+        function generateColors(count, baseColor) {
+            // Parse base color (hex format)
+            const r = parseInt(baseColor.substr(1, 2), 16);
+            const g = parseInt(baseColor.substr(3, 2), 16);
+            const b = parseInt(baseColor.substr(5, 2), 16);
+
+            const colors = [];
+            for (let i = 0; i < count; i++) {
+                const factor = 0.7 + (i / count) * 0.3; // Range from 70% to 100% brightness
+                const newR = Math.round(r * factor);
+                const newG = Math.round(g * factor);
+                const newB = Math.round(b * factor);
+                colors.push('#' +
+                    newR.toString(16).padStart(2, '0') +
+                    newG.toString(16).padStart(2, '0') +
+                    newB.toString(16).padStart(2, '0')
+                );
+            }
+            return colors;
+        }
+
+        // Populate data sources
+        function populateSources() {
+            const sourcesList = document.getElementById('sources-list');
+            BUDGET_DATA.sources.forEach(source => {
+                const li = document.createElement('li');
+                li.innerHTML = '<strong>' + source.title + ':</strong> ' +
+                              '<a href="' + source.url + '" target="_blank">' + source.description + '</a>';
+                sourcesList.appendChild(li);
+            });
+        }
+
+        // Populate disclaimer
+        function populateDisclaimer() {
+            document.getElementById('disclaimer-text').textContent = BUDGET_DATA.disclaimer;
+        }
+    </script>
+</body>
+</html>
